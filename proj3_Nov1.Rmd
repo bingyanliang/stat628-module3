@@ -1,0 +1,91 @@
+---
+title: "Proj3_Oct29"
+author: "Ruofeng Tang"
+date: "2023-10-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# dataset in CA 5k, IL 2k, NV 7.7k, total unable to run
+library(jsonlite)
+library(dplyr)
+library(tidyr)
+library(leaflet)
+library(leaflet.extras)
+con <- file("business.json", "r")
+lines <- readLines(con)
+close(con)
+json_data_list <- list()
+for (line in lines) {
+  json_data <- fromJSON(line)
+  if (json_data$state == 'FL'){
+    json_data_list <- c(json_data_list, list(json_data))
+  }
+}
+```
+
+```{r}
+business_data <- do.call(rbind, json_data_list)
+busCA = as.data.frame(business_data)
+for (i in 1:11){
+  busCA[,i] = unlist(busCA[,i])
+}
+busCA$postal_code = as.numeric(busCA$postal_code)
+
+# check to see main area Tampa 9k, clearwater 2k
+city_table = table(busCA$city)
+city_table
+
+busSB = busCA[busCA$city=='Tampa',]
+
+# check if any weekday close
+for (i in 1:length(busSB$hours)) {
+  if (!is.null(unlist(busSB$hours[i]))) {
+    days <- unlist(busSB$hours[i])
+    closed <- list()
+
+    for (j in 1:length(days)) {
+      if (days[j] == '0:0-0:0') {
+        closed <- append(closed, names(days)[j])
+      }
+    }
+    if (length(closed) == 0) {
+      closed <- NA  # Set to NA if there are no closed days
+    }
+    busSB[i, 'closed'] <- paste(closed, collapse = ', ')
+  }
+}
+
+# 3k restaurants
+matching_rows <- busSB[grepl('Restaurants', busSB$categories), ]
+
+# skewed right
+stars_table = table(busSB$stars)
+stars_table
+
+
+m <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = -82.43004, lat = 28.01036, zoom = 10)
+
+m <- m %>%
+  addMarkers(data = matching_rows, ~longitude, 
+             ~latitude, popup = ~name,
+             clusterOptions = markerClusterOptions())
+
+m
+
+busSB$categories <- as.character(busSB$categories)
+combined_words <- unlist(strsplit(busSB$categories, ","))
+unique_words <- unique(combined_words)
+count_unique_words <- length(unique_words)
+
+word_freq <- table(combined_words)
+sorted_word_freq <- sort(word_freq, decreasing = TRUE)
+head(sorted_word_freq,20)
+#maybe: check category and review by t-test, use dictionary? check if weekday open or close influence, also dictionary
+```
