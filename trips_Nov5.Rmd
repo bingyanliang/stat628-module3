@@ -1,0 +1,63 @@
+---
+title: "trips_Nov5"
+author: "Ruofeng Tang"
+date: "2023-11-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# first analyze people not staying at home percentage
+library(ggplot2)
+library(cowplot)
+trips = read.csv('hillsborough.csv')
+trips = trips[,c(-1,-2,-4,-5,-6,-7)]
+trips['trip_percentage'] = trips$Population.Not.Staying.at.Home /
+  (trips$Population.Staying.at.Home+trips$Population.Not.Staying.at.Home)
+
+
+plot(trips$trip_percentage,type='l',xlab='Day Since 1.1.2019',main='percentage of people traveling')
+
+plot(trips$trip_percentage,type='l',xlab='Day Since 1.1.2019',main='percentage of people traveling',xlim=c(700,800))
+
+# inspect to see that index 749 (Jan.4,2021) is when percentage rises (post Covid?)
+
+p1 = ggplot(data = trips, aes(group = Month, y = trip_percentage)) +
+  geom_boxplot() + ggtitle('boxplot of percentage by month')
+
+p1
+
+# 2019.1.1 Tuesday
+trips$weekday = 0
+trips$weekday[1:6] = 2:7
+trips$weekday[7:nrow(trips)] = rep(1:7, length.out = nrow(trips)-6)
+
+p2 = ggplot(data = trips, aes(group = weekday, y = trip_percentage)) +
+  geom_boxplot() + ggtitle('boxplot of percentage by day of week')
+
+p2
+```
+
+```{r}
+# About number of trips
+plot(trips$Number.of.Trips,type='l',xlab='Day Since 1.1.2019',main='number of trips')
+
+#index 749 is still the turning point
+
+p3 = ggplot(data = trips, aes(group = Month, y = Number.of.Trips)) +
+  geom_boxplot() + ggtitle('boxplot of trips by month')
+
+p3
+
+p4 = ggplot(data = trips, aes(group = weekday, y = Number.of.Trips)) +
+  geom_boxplot() + ggtitle('boxplot of trips by day of week')
+
+p4
+
+# comparison plot
+plot_grid(p1, p3, ncol = 2)
+plot_grid(p2, p4, ncol = 2)
+```
