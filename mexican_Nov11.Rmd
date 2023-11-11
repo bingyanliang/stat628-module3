@@ -1,0 +1,292 @@
+---
+title: "mexican_Nov5"
+author: "Ruofeng Tang"
+date: "2023-11-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(leaflet)
+df = read.csv('hill_business.csv')
+df_mex = df[grepl('Mexican', df$categories),]
+
+# mostly closes on Monday or not
+table(df_mex$closed)
+df_mex$mon = grepl('Monday',df_mex$closed)
+
+# check star distribution
+table(df_mex$stars)
+
+# check if Monday close influences
+df_open = df_mex[df_mex$mon==FALSE,]
+df_close = df_mex[df_mex$mon==TRUE,]
+plot(density(df_open$stars))
+plot(density(df_close$stars))
+
+# p 0.079, kind of different, close on Monday have higher mean
+t.test(df_open$stars,df_close$stars)
+
+# 88 closed, 231 open
+table(df_mex$is_open)
+
+# most in Tampa
+table(df_mex$city)
+
+# stars 3.5, 4, 4.5 have significantly higher review count individuals
+plot(df_mex$stars,df_mex$review_count)
+
+m <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = -82.57857, lat = 28.09214, zoom = 9)
+
+m <- m %>%
+  addMarkers(data = df_mex, ~longitude, 
+             ~latitude, popup = ~name,
+             clusterOptions = markerClusterOptions())
+m
+```
+
+```{r}
+# get attributes
+library(jsonlite)
+con <- file("business.json", "r")
+lines <- readLines(con)
+close(con)
+json_data_list <- list()
+for (line in lines) {
+  json_data <- fromJSON(line)
+  if (json_data$state == 'FL'){
+    if (json_data$city =='Tampa' |
+        json_data$city=='Apollo Beach' | 
+        json_data$city=='Lutz' |
+        json_data$city=='Odessa' |
+        json_data$city=='Riverview' |
+        json_data$city=='Ruskin' |
+        json_data$city=='Seffner' |
+        json_data$city=='Valrico' |
+        json_data$city=='Brandon') {
+      json_data_list <- c(json_data_list, list(json_data))
+    }
+  }
+}
+business_data <- do.call(rbind, json_data_list)
+busHI = as.data.frame(business_data)
+busMex = busHI[grepl('Mexican',busHI$categories),]
+
+temp = busMex$attributes[[1]]
+names(temp)
+
+dict = list()
+for (lists in busMex$attributes) {
+  for (items in names(lists)) {
+    if (items %in% names(dict)) {
+      dict[[items]] = dict[[items]] + 1
+    }
+    else {
+      dict[[items]] = 1
+    }
+  }
+}
+
+#display results, add popular ones
+print(dict)
+
+#alcohol
+busMex$alcohol2 = NA
+busMex$alcohol1 = grepl('Alcohol',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$alcohol1[i]) {
+    busMex$alcohol2[i] = busMex$attributes[[i]]$Alcohol
+  }
+}
+
+model = aov(unlist(stars)~alcohol2,data=busMex)
+# pr not small enough
+summary(model)
+
+#goodforgroups
+busMex$group2 = NA
+busMex$group1 = grepl('GoodForGroups',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$group1[i]) {
+    busMex$group2[i] = busMex$attributes[[i]]$RestaurantsGoodForGroups
+  }
+}
+
+model = t.test(unlist(stars)~group2,data=busMex)
+# not small enough
+model
+
+#RestaurantsAttire
+busMex$attire2 = NA
+busMex$attire1 = grepl('Attire',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$attire1[i]) {
+    busMex$attire2[i] = busMex$attributes[[i]]$RestaurantsAttire
+  }
+}
+table(busMex$attire2) # all casual but 1
+
+#goodforkids
+busMex$kids2 = NA
+busMex$kids1 = grepl('GoodForKids',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$kids1[i]) {
+    busMex$kids2[i] = busMex$attributes[[i]]$GoodForKids
+  }
+}
+
+model = t.test(unlist(stars)~kids2,data=busMex)
+# not small enough
+model
+
+#businessParking, another list, ignore for now
+
+#BusinessAcceptsCreditCards
+busMex$card2 = NA
+busMex$card1 = grepl('Card',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$card1[i]) {
+    busMex$card2[i] = busMex$attributes[[i]]$BusinessAcceptsCreditCards
+  }
+}
+table(busMex$card2)
+model = t.test(unlist(stars)~card2,data=busMex)
+model # significant, but only 6 do not accept
+
+#RestaurantsReservations
+busMex$reservation2 = NA
+busMex$reservation1 = grepl('Reservations',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$reservation1[i]) {
+    busMex$reservation2[i] = busMex$attributes[[i]]$RestaurantsReservations
+  }
+}
+table(busMex$reservation2)
+model = t.test(unlist(stars)~reservation2,data=busMex)
+model # significant, 3.37 vs. 3.65
+
+#RestaurantsTakeOut
+busMex$takeout2 = NA
+busMex$takeout1 = grepl('TakeOut',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$takeout1[i]) {
+    busMex$takeout2[i] = busMex$attributes[[i]]$RestaurantsTakeOut
+  }
+}
+table(busMex$takeout2) # false6, none2, not significant
+
+#BikeParking
+busMex$bike2 = NA
+busMex$bike1 = grepl('Bike',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$bike1[i]) {
+    busMex$bike2[i] = busMex$attributes[[i]]$BikeParking
+  }
+}
+table(busMex$bike2)
+model = t.test(unlist(stars)~bike2,data=busMex)
+model # p-value 0.12 kind of ok, False 3.3, True 3.57
+
+#HasTV
+busMex$TV2 = NA
+busMex$TV1 = grepl('TV',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$TV1[i]) {
+    busMex$TV2[i] = busMex$attributes[[i]]$HasTV
+  }
+}
+table(busMex$TV2)
+model = t.test(unlist(stars)~TV2,data=busMex)
+model # p-value 2.7e-05, False 4, True 3.42, but only 20 without TV
+temp = na.omit(busMex[busMex$TV2=='False',])
+temp = temp[,c('stars','review_count')]
+# notice that most appear successful with many review counts and high stars
+print(temp)
+
+#NoiseLevel
+busMex$noise2 = NA
+busMex$noise1 = grepl('Noise',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$noise1[i]) {
+    busMex$noise2[i] = busMex$attributes[[i]]$NoiseLevel
+  }
+}
+table(busMex$noise2) # mostly average
+
+#RestaurantsDelivery
+busMex$delivery2 = NA
+busMex$delivery1 = grepl('Delivery',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$delivery1[i]) {
+    busMex$delivery2[i] = busMex$attributes[[i]]$RestaurantsDelivery
+  }
+}
+table(busMex$delivery2) # merge none and false
+busMex[grep('None',busMex$delivery2),'delivery2'] = 'False'
+model = t.test(unlist(stars)~delivery2,data=busMex)
+model   # p-value 4.93e-06, False 3.73, True 3.26
+
+#OutdoorSeating
+busMex$Seating2 = NA
+busMex$Seating1 = grepl('Seating',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$Seating1[i]) {
+    busMex$Seating2[i] = busMex$attributes[[i]]$OutdoorSeating
+  }
+}
+table(busMex$Seating2) # merge none and false
+busMex[grep('None',busMex$Seating2),'Seating2'] = 'False'
+model = t.test(unlist(stars)~Seating2,data=busMex)
+model # not small enough
+
+#WiFi
+busMex$WiFi2 = NA
+busMex$WiFi1 = grepl('WiFi',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$WiFi1[i]) {
+    busMex$WiFi2[i] = busMex$attributes[[i]]$WiFi
+  }
+}
+table(busMex$WiFi2) # free vs. no
+busMex[grep('free',busMex$WiFi2),'WiFi2'] = 'free'
+busMex[grep('o',busMex$WiFi2),'WiFi2'] = 'no'
+busMex[grep('u',busMex$WiFi2),'WiFi2'] = 'no'
+model = t.test(unlist(stars)~WiFi2,data=busMex)
+model # not small enough
+
+#RestaurantsPriceRange2
+busMex$Price2 = NA
+busMex$Price1 = grepl('Price',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$Price1[i]) {
+    busMex$Price2[i] = busMex$attributes[[i]]$RestaurantsPriceRange2
+  }
+}
+table(busMex$Price2) # free vs. no
+model = t.test(unlist(stars)~Price2,data=busMex)
+model # p= 0.014, range 1 3.27, range 2 3.53
+
+#Ambience a list, ignore
+
+#GoodForMeal a list
+
+#Caters
+busMex$Caters2 = NA
+busMex$Caters1 = grepl('Caters',busMex$attributes)
+for (i in 1:nrow(busMex)) {
+  if (busMex$Caters1[i]) {
+    busMex$Caters2[i] = busMex$attributes[[i]]$Caters
+  }
+}
+table(busMex$Caters2) # free vs. no
+model = t.test(unlist(stars)~Caters2,data=busMex)
+model # p value 0.006, false 3.22, true 3.66
+
+# summary: want to accept reservations, bike parking(p value 0.12), no TV (only 30 cases, but most have high review counts), no delivery, price range 2 instead of 1, provides cater
+```
