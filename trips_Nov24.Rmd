@@ -1,0 +1,257 @@
+---
+title: "trips_Nov5"
+author: "Ruofeng Tang"
+date: "2023-11-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# first analyze people not staying at home percentage
+library(ggplot2)
+library(cowplot)
+library(dplyr)
+trips = read.csv('hillsborough.csv')
+trips = trips[,c(-1,-2,-4,-5,-6,-7)]
+trips['trip_percentage'] = trips$Population.Not.Staying.at.Home /
+  (trips$Population.Staying.at.Home+trips$Population.Not.Staying.at.Home)
+trips$Date <- as.Date(trips$Date, format = "%Y/%m/%d")
+
+# 2019.1.1 Tuesday
+trips$weekday = 0
+trips$weekday[1:6] = 2:7
+trips$weekday[7:nrow(trips)] = rep(1:7, length.out = nrow(trips)-6)
+
+plot(trips$trip_percentage,type='l',xlab='Day Since 1.1.2019',main='percentage of people traveling')
+
+plot(trips$Date,trips$trip_percentage)
+
+plot(trips$trip_percentage,type='l',xlab='Day Since 1.1.2019',main='percentage of people traveling',xlim=c(700,800))
+
+# inspect to see that index 749 (Jan.4,2021) is when percentage rises (post Covid?) index 452 to 460 (Mar.13,2020 to Mar.20,2020) a steady drop
+
+p1 = ggplot(data = trips, aes(x=Month,group = Month, y = trip_percentage)) +
+  geom_boxplot() + ggtitle('boxplot of percentage by month')
+
+p1
+
+p2 = ggplot(data = trips, aes(x=weekday, group = weekday, y = trip_percentage)) +
+  geom_boxplot() + ggtitle('boxplot of percentage by day of week')
+
+p2
+```
+
+```{r}
+# About number of trips
+plot(trips$Number.of.Trips,type='l',xlab='Day Since 1.1.2019',main='number of trips')
+
+#index 749 is still the turning point
+
+p3 = ggplot(data = trips, aes(x=Month,group = Month, y = Number.of.Trips)) +
+  geom_boxplot() + ggtitle('boxplot of trips by month')
+
+p3
+
+p4 = ggplot(data = trips, aes(x=weekday,group = weekday, y = Number.of.Trips)) +
+  geom_boxplot() + ggtitle('boxplot of trips by day of week')
+
+p4
+
+# comparison plot
+plot_grid(p1, p3, ncol = 2)
+plot_grid(p2, p4, ncol = 2)
+```
+
+```{r}
+# with reviews
+reviews = read.csv2('reviews_mex.csv')
+
+# Load the dplyr package
+library(dplyr)
+
+# Extract the year and month part
+reviews <- reviews %>%
+  mutate(date = substr(date, 1, 10))
+
+#Sys.setlocale("LC_TIME", "C")
+
+reviews$date = as.Date(reviews$date,format='%Y-%m-%d')
+
+# Reference date (January 1, 2019)
+ref <- as.Date('2019-01-01',format='%Y-%m-%d')
+
+reviews = reviews[reviews$date>ref,]
+
+# review count, dropped after covid
+rev_aggr <- reviews %>%
+  group_by(month = format(date, "%Y-%m")) %>%
+  summarise(total_reviews = n())
+
+ggplot(rev_aggr, aes(x = month, y = total_reviews,group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Total reviews by Month", x = "Month", y = "Total Y")
+
+# total trips
+df_aggr <- trips %>%
+  group_by(month = format(Date, "%Y-%m")) %>%
+  summarise(total_trips = sum(Number.of.Trips))
+
+ggplot(df_aggr, aes(x = month, y = total_trips,group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Total trips by Month", x = "Month", y = "Total Y")
+
+# average star
+rev_mean <- reviews %>%
+  group_by(month = format(date, "%Y-%m")) %>%
+  summarise(star_mean = mean(stars_y))
+
+ggplot(rev_mean, aes(x = month, y = star_mean,group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Star by Month", x = "Month", y = "Mean Y")
+
+# average percentage out
+df_mean <- trips %>%
+  group_by(month = format(Date, "%Y-%m")) %>%
+  summarise(percent_mean = mean(trip_percentage))
+
+ggplot(df_mean, aes(x = month, y = percent_mean,group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "mean trip percentage by Month", x = "Month", y = "Total Y")
+```
+
+```{r}
+trips_precov=trips[1:452,]
+
+# not meaningful
+plot(trips_precov$trip_percentage,type='l',xlab='Day Since 1.1.2019',main='percentage of people traveling')
+
+p1a = ggplot(data = trips_precov, aes(x=Month,group = Month, y = trip_percentage)) +
+  scale_x_continuous(breaks = seq(1, 12, by = 1), labels = seq(1, 12, by = 1))+ ylim(0.7,0.87)+
+  geom_boxplot() + ggtitle('boxplot of percentage by month')
+
+# most on May
+p1a
+
+p2a = ggplot(data = trips_precov, aes(x=weekday, group = weekday, y = trip_percentage)) + ylim(0.72,0.87)+
+  geom_boxplot() + ggtitle('boxplot of percentage by day of week')
+
+# less percentage of people travel on weekends
+p2a
+
+# not meaningful
+plot(trips_precov$Number.of.Trips,type='l',xlab='Day Since 1.1.2019',main='Number of Trips')
+
+p3a = ggplot(data = trips_precov, aes(x=Month,group = Month, y = Number.of.Trips)) +scale_x_continuous(breaks = seq(1, 12, by = 1), labels = seq(1, 12, by = 1))+ylim(3e+06,6.5e+06)+
+  geom_boxplot() + ggtitle('boxplot of trips by month')
+
+# not meaningful
+p3a
+
+p4a = ggplot(data = trips_precov, aes(x=weekday, group = weekday, y = Number.of.Trips)) +ylim(3e+06,6.5e+06)+
+  geom_boxplot() + ggtitle('boxplot of trips by day of week')
+
+# less trips on Sunday
+p4a
+```
+
+```{r}
+trips_cov=trips[460:748,]
+
+# not meaningful
+plot(trips_cov$trip_percentage,type='l',xlab='Day Since Mar.20,2020',main='percentage of people traveling')
+
+p1b = ggplot(data = trips_cov, aes(x=Month,group = Month,y = trip_percentage)) + 
+  scale_x_continuous(breaks = seq(1, 12, by = 1), labels = seq(1, 12, by = 1))+ylim(0.7,0.87)+
+  geom_boxplot() + ggtitle('boxplot of percentage by month')
+
+# major increase from april to may, decrease from Oct. to Nov.
+p1b
+
+p2b = ggplot(data = trips_cov, aes(x=weekday, group = weekday, y = trip_percentage)) + ylim(0.72,0.87)+
+  geom_boxplot() + ggtitle('boxplot of percentage by day of week')
+
+# less percentage of people travel on Sunday
+p2b
+
+# not meaningful
+plot(trips_cov$Number.of.Trips,type='l',xlab='Day Since Mar.20,2020',main='Number of Trips')
+
+p3b = ggplot(data = trips_cov, aes(x=Month,group = Month,y = Number.of.Trips)) + 
+  scale_x_continuous(breaks = seq(1, 12, by = 1), labels = seq(1, 12, by = 1))+ylim(3e+06,6.5e+06)+
+  geom_boxplot() + ggtitle('boxplot of trips by month')
+
+# major increase from april to may, no decrease from Oct. to Nov.
+p3b
+
+p4b = ggplot(data = trips_cov, aes(x=weekday, group = weekday, y = Number.of.Trips)) +ylim(3e+06,6.5e+06)+
+  geom_boxplot() + ggtitle('boxplot of trips by day of week')
+
+# less trips on Sunday
+p4b
+```
+
+```{r}
+trips_afcov=trips[749:1741,]
+
+# not meaningful
+plot(trips_afcov$trip_percentage,type='l',xlab='Day Since Jan.4,2021',main='percentage of people traveling')
+
+p1c = ggplot(data = trips_afcov, aes(x=Month,group = Month, y = trip_percentage)) +ylim(0.7,0.87)+
+  geom_boxplot() + ggtitle('boxplot of percentage by month')+
+scale_x_continuous(breaks = seq(1, 12, by = 1), labels = seq(1, 12, by = 1))
+
+# least on Jan.
+p1c
+
+p2c = ggplot(data = trips_afcov, aes(x=weekday, group = weekday, y = trip_percentage)) + ylim(0.72,0.87)+
+  geom_boxplot() + ggtitle('boxplot of percentage by day of week')
+
+# less percentage of people travel on Sunday, but not as obvious
+p2c
+
+# kind of increasing after index 400
+plot(trips_afcov$Number.of.Trips,type='l',xlab='Day Since Jan.4,2021',main='Number of Trips')
+
+p3c = ggplot(data = trips_afcov, aes(x=Month,group = Month, y = Number.of.Trips)) + ylim(3e+06,6.5e+06)+
+  geom_boxplot() + ggtitle('boxplot of trips by month')+
+scale_x_continuous(breaks = seq(1, 12, by = 1), labels = seq(1, 12, by = 1))
+
+# least on Jan., but not too much difference
+p3c
+
+p4c = ggplot(data = trips_afcov, aes(x=weekday, group = weekday, y = Number.of.Trips)) +ylim(3e+06,6.5e+06)+
+  geom_boxplot() + ggtitle('boxplot of trips by day of week')
+
+# less trips on Sunday, not obvious
+p4c
+```
+
+```{r}
+# compare percentage by month in 3 time periods; huge drop in percentage during covid, did not recover after covid
+plot_grid(p1a, p1b,p1c, nrow=1, ncol =3)
+
+# compare percentage by day in a week in 3 time periods; huge drop in percentage during covid, did not recover after covid; can see less percentages on weekends
+plot_grid(p2a, p2b,p2c, nrow=1, ncol =3)
+
+# compare trips by month in 3 time periods; huge drop during covid, but recover after covid
+plot_grid(p3a, p3b,p3c, nrow=1, ncol =3)
+
+# compare trips by day in a week in 3 time periods; huge drop during covid, but recover after covid; can see less trips on Sunday
+plot_grid(p4a, p4b,p4c, nrow=1, ncol =3)
+
+# compare pre-covid percentage and number of trips: although percentage is steady by month, trips made vary a lot
+plot_grid(p1a, p3a,p2a,p4a, nrow=2, ncol =2)
+
+# compare during-covid percentage and number of trips: percentage and trips align, both increase from April to May
+plot_grid(p1b, p3b,p2b,p4b, nrow=2, ncol =2)
+
+# compare after-covid percentage and number of trips: percentage and trips align
+plot_grid(p1c, p3c,p2c,p4c, nrow=2, ncol =2)
+```
