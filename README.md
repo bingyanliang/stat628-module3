@@ -21,8 +21,8 @@ Contains the source code for Shiny app
 Contains the 4-page summary and slides for our project
 
 ## Contributers
-Ziming Li:
+Ziming Li: zli2543@wisc.edu
 
-Ruofen Tang:
+Ruofen Tang: rtang64@wisc.edu
 
 Bingyan Liang: bliang34@wisc.edu
