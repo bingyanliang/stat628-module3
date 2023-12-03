@@ -1,0 +1,199 @@
+---
+title: "trips_resultNov24"
+author: "Ruofeng Tang"
+date: "2023-11-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Synopsis
+Covid changed people's lifestyle and left a lasting impact. Reviews on Yelp and percentage of people who travel did not recover even after covid ended.
+
+```{r}
+# data processing
+library(ggplot2)
+library(cowplot)
+library(dplyr)
+trips = read.csv('hillsborough.csv')
+trips = trips[,c(-1,-2,-4,-5,-6,-7)]
+trips['trip_percentage'] = trips$Population.Not.Staying.at.Home /
+  (trips$Population.Staying.at.Home+trips$Population.Not.Staying.at.Home)
+trips$Date <- as.Date(trips$Date, format = "%Y/%m/%d")
+
+# 2019.1.1 Tuesday
+trips$weekday = 0
+trips$weekday[1:6] = 2:7
+trips$weekday[7:nrow(trips)] = rep(1:7, length.out = nrow(trips)-6)
+```
+
+```{r}
+plot(trips$trip_percentage,type='l',xlab='Day Since 1.1.2019',main='percentage of people traveling')
+```
+
+From the plot, can see impact of Covid; inspect the dataset to determine breakpoints at index 452 (Mar.13,2020) and index 749 (Jan.4,2021). Use them to separate pre-covid, during-covid, post-covid periods.
+
+Checked percentage of people traveling and number of trips vs. month and day in a week, creating 4 plots in each time period.
+
+```{r}
+trips_precov=trips[1:452,]
+
+p1a = ggplot(data = trips_precov, aes(x=Month,group = Month, y = trip_percentage)) +
+  scale_x_continuous(breaks = seq(1, 12, by = 1), labels = seq(1, 12, by = 1))+ ylim(0.7,0.87)+
+  geom_boxplot() + ggtitle('precov % by month')
+
+p2a = ggplot(data = trips_precov, aes(x=weekday, group = weekday, y = trip_percentage)) + ylim(0.72,0.87)+
+  geom_boxplot() + ggtitle('precov % by day of week')
+
+p3a = ggplot(data = trips_precov, aes(x=Month,group = Month, y = Number.of.Trips)) +scale_x_continuous(breaks = seq(1, 12, by = 1), labels = seq(1, 12, by = 1))+ylim(3e+06,6.5e+06)+
+  geom_boxplot() + ggtitle('precov trips by month')
+
+p4a = ggplot(data = trips_precov, aes(x=weekday, group = weekday, y = Number.of.Trips)) +ylim(3e+06,6.5e+06)+
+  geom_boxplot() + ggtitle('precov trips by day of week')
+
+trips_cov=trips[460:748,]
+
+p1b = ggplot(data = trips_cov, aes(x=Month,group = Month,y = trip_percentage)) + 
+  scale_x_continuous(breaks = seq(1, 12, by = 1), labels = seq(1, 12, by = 1))+ylim(0.7,0.87)+
+  geom_boxplot() + ggtitle('cov % by month')
+
+p2b = ggplot(data = trips_cov, aes(x=weekday, group = weekday, y = trip_percentage)) + ylim(0.72,0.87)+
+  geom_boxplot() + ggtitle('cov % by day of week')
+
+p3b = ggplot(data = trips_cov, aes(x=Month,group = Month,y = Number.of.Trips)) + 
+  scale_x_continuous(breaks = seq(1, 12, by = 1), labels = seq(1, 12, by = 1))+ylim(3e+06,6.5e+06)+
+  geom_boxplot() + ggtitle('cov trips by month')
+
+p4b = ggplot(data = trips_cov, aes(x=weekday, group = weekday, y = Number.of.Trips)) +ylim(3e+06,6.5e+06)+
+  geom_boxplot() + ggtitle('cov trips by day of week')
+
+trips_afcov=trips[749:1741,]
+
+p1c = ggplot(data = trips_afcov, aes(x=Month,group = Month, y = trip_percentage)) +ylim(0.7,0.87)+
+  geom_boxplot() + ggtitle('postcov % by month')+
+scale_x_continuous(breaks = seq(1, 12, by = 1), labels = seq(1, 12, by = 1))
+
+p2c = ggplot(data = trips_afcov, aes(x=weekday, group = weekday, y = trip_percentage)) + ylim(0.72,0.87)+
+  geom_boxplot() + ggtitle('postcov % by day of week')
+
+p3c = ggplot(data = trips_afcov, aes(x=Month,group = Month, y = Number.of.Trips)) + ylim(3e+06,6.5e+06)+
+  geom_boxplot() + ggtitle('postcov trips by month')+
+scale_x_continuous(breaks = seq(1, 12, by = 1), labels = seq(1, 12, by = 1))
+
+p4c = ggplot(data = trips_afcov, aes(x=weekday, group = weekday, y = Number.of.Trips)) +ylim(3e+06,6.5e+06)+
+  geom_boxplot() + ggtitle('postcov trips by day of week')
+```
+
+First checked individual plots. Some extreme data removed when scaling y-axis to be the same for comparison plots later. Only meaningful plots displayed below:
+
+```{r}
+# most on May
+p1a
+
+# major increase from april to may, decrease from Oct. to Nov.
+p1b   #Feb. value missing since no Feb. in cov period
+
+# major increase from april to may, no decrease from Oct. to Nov.
+p3b  #Feb. value missing since no Feb. in cov period
+
+# least on Jan.
+p1c
+
+# least on Jan., but not too much difference
+p3c
+```
+
+Check comparison plots:
+
+```{r}
+# compare percentage by month in 3 time periods; huge drop in percentage during covid, did not recover after covid
+plot_grid(p1a, p1b,p1c, nrow=1, ncol =3)
+
+# compare percentage by day in a week in 3 time periods; huge drop in percentage during covid, did not recover after covid; can see less percentages on weekends
+plot_grid(p2a, p2b,p2c, nrow=1, ncol =3)
+
+# compare trips by month in 3 time periods; huge drop during covid, but recover after covid
+plot_grid(p3a, p3b,p3c, nrow=1, ncol =3)
+
+# compare trips by day in a week in 3 time periods; huge drop during covid, but recover after covid; can see less trips on Sunday
+plot_grid(p4a, p4b,p4c, nrow=1, ncol =3)
+
+# compare pre-covid percentage and number of trips: although percentage is steady by month, trips made vary a lot
+plot_grid(p1a, p3a,p2a,p4a, nrow=2, ncol =2)
+
+# compare during-covid percentage and number of trips: percentage and trips align, both increase from April to May
+plot_grid(p1b, p3b,p2b,p4b, nrow=2, ncol =2)
+
+# compare after-covid percentage and number of trips: percentage and trips align
+plot_grid(p1c, p3c,p2c,p4c, nrow=2, ncol =2)
+```
+
+Incorporate Reviews data:
+
+```{r}
+reviews = read.csv2('reviews_mex.csv')
+
+# Extract the year and month part
+reviews <- reviews %>%
+  mutate(date = substr(date, 1, 10))
+
+reviews$date = as.Date(reviews$date,format='%Y-%m-%d')
+
+# Reference date (January 1, 2019)
+ref <- as.Date('2019-01-01',format='%Y-%m-%d')
+
+reviews = reviews[reviews$date>ref,]
+
+# review count, dropped after covid
+rev_aggr <- reviews %>%
+  group_by(month = format(date, "%Y-%m")) %>%
+  summarise(total_reviews = n())
+
+g1 = ggplot(rev_aggr, aes(x = month, y = total_reviews,group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Total reviews by Month", x = "Month", y = "Review Count")
+
+# total trips
+df_aggr <- trips %>%
+  group_by(month = format(Date, "%Y-%m")) %>%
+  summarise(total_trips = sum(Number.of.Trips))
+
+g2 = ggplot(df_aggr, aes(x = month, y = total_trips,group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Total trips by Month", x = "Month", y = "Number of Trips")
+
+# average star
+rev_mean <- reviews %>%
+  group_by(month = format(date, "%Y-%m")) %>%
+  summarise(star_mean = mean(stars_y))
+
+g3 = ggplot(rev_mean, aes(x = month, y = star_mean,group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Star by Month", x = "Month", y = "Average Star")
+
+# average percentage out
+df_mean <- trips %>%
+  group_by(month = format(Date, "%Y-%m")) %>%
+  summarise(percent_mean = mean(trip_percentage))
+
+g4 = ggplot(df_mean, aes(x = month, y = percent_mean,group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "mean trip percentage by Month", x = "Month", y = "mean trip percentage")
+```
+
+```{r}
+g1    # review count dropped during covid and did not recover
+g2    # number of trips made recovered (the last data is extremely low because dataset ended mid-month)
+g3    # during covid average star kind of increased, but take with caution since review count dropped
+g4    # percentage of people traveling dropped during covid and did not recover
+```
+
+In general, the results align with analyses from previous part.
+
+Next Step: incorporate census data:

@@ -1,0 +1,52 @@
+---
+title: "mexican_Nov5"
+author: "Ruofeng Tang"
+date: "2023-11-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(leaflet)
+df = read.csv('hill_business.csv')
+df_mex = df[grepl('Mexican', df$categories),]
+
+# mostly closes on Monday or not
+table(df_mex$closed)
+df_mex$mon = grepl('Monday',df_mex$closed)
+
+# check star distribution
+table(df_mex$stars)
+
+# check if Monday close influences
+df_open = df_mex[df_mex$mon==FALSE,]
+df_close = df_mex[df_mex$mon==TRUE,]
+plot(density(df_open$stars))
+plot(density(df_close$stars))
+
+# p 0.079, kind of different, close on Monday have higher mean
+t.test(df_open$stars,df_close$stars)
+
+# 88 closed, 231 open
+table(df_mex$is_open)
+
+# most in Tampa
+table(df_mex$city)
+
+# stars 3.5, 4, 4.5 have significantly higher review count individuals
+plot(df_mex$stars,df_mex$review_count)
+
+m <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = -82.57857, lat = 28.09214, zoom = 9)
+
+m <- m %>%
+  addMarkers(data = df_mex, ~longitude, 
+             ~latitude, popup = ~name,
+             clusterOptions = markerClusterOptions())
+m
+```
