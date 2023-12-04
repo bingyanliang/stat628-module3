@@ -12,18 +12,18 @@ In this project, we focused on Mexican Restaurants in a specific area: Hillsboro
 This folder contains the preprocessed data for analysis, stored in csv files
 
 >/code:
-This folder contains our R, Python code for analysis
+This folder contains our R, Python code for analysis. HTML version of RMD files are in 'image' folder.
 >>/Shiny:
 Contains the source code for Shiny app
 
 >>/analyze_process:
-The analysis of Trip, Business and Census data
+The analysis of Trip, Business and Census data. Multiple versions of rmd files are named based on time created. Final versions are 'mexican_Nov30', 'trips_resultNov24'
 
 >>/data_cleaning:
 Contains the cleaning code for original dataset
 
 >/image:
-The images we produced during the analysis
+The images we produced during the analysis, including HTML files and one docx file
 
 >/Reports:
 Contains the 4-page summary and slides for our project
