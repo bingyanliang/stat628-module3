@@ -4,7 +4,7 @@ This is the module-3 project of STAT 628 in fall 2023 semester by professor Hyun
 
 ## Introduction
 
-In this project, we focused on Mexican Restaurants in a specific area: Hillsborough county of Florida. This repository contains our source code, summary and report for the project and an excutable Shiny app code. You can get access to the Shiny app through this [link text]:()
+In this project, we focused on Mexican Restaurants in a specific area: Hillsborough county of Florida. This repository contains our source code, summary and report for the project and an excutable Shiny app code. You can get access to the Shiny app through https://zli981123.shinyapps.io/YelpAnalysis/
 
 ## Files and Folders
 
