@@ -13,9 +13,17 @@ This folder contains the preprocessed data for analysis, stored in csv files
 
 >/code:
 This folder contains our R, Python code for analysis
-
->/Shiny:
+>>/Shiny:
 Contains the source code for Shiny app
+
+>>/analyze_process:
+The analysis of Trip, Business and Census data
+
+>>/data_cleaning:
+Contains the cleaning code for original dataset
+
+>/image:
+The images we produced during the analysis
 
 >/Reports:
 Contains the 4-page summary and slides for our project
