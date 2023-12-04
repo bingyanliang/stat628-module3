@@ -70,6 +70,7 @@ ui <- fluidPage(
       
       conditionalPanel(
         condition = "input.selectedPage === 'Travel Analysis'",
+        HTML('<p>This page provides travel information before, during and after Covid. You can check number of trips and percentage of people who traveled per day.</p>'),
         selectInput("selectedComparison", "Select Comparison Type:", 
                     choices = c("Percentage by Month", "Percentage by Day", "Trips by Month", "Trips by Day",
                                 "Pre-Covid Comparison", "During-Covid Comparison", "After-Covid Comparison")),
