@@ -1,0 +1,13 @@
+name: shiny1
+title: shiny1
+username: zli981123
+account: zli981123
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 10707448
+bundleId: 8002972
+url: https://zli981123.shinyapps.io/shiny1/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: demo.Rmd|shiny.md|trips_resultNov24.Rmd
